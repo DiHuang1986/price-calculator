@@ -14,15 +14,15 @@
     #result:empty { display: none; }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 pt-5 flex justify-center items-start sm:p-4 sm:items-center">
+<body class="min-h-screen bg-gray-50 p-2.5 pt-5 flex justify-center items-start sm:p-4 sm:items-center">
 
-<div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xl animate-slide-in">
-  <h2 class="text-indigo-600 text-center mb-4 text-2xl font-bold">💰 价格计算器</h2>
+<div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl animate-slide-in border border-gray-200">
+  <h2 class="text-gray-800 text-center mb-4 text-2xl font-bold">💰 价格计算器</h2>
 
-  <div class="bg-gray-100 p-4 rounded-lg mb-3 border-l-4 border-indigo-600">
+  <div class="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
     <div class="flex justify-between items-center mb-3">
       <div class="text-gray-700 font-semibold text-sm">汇率设置</div>
-      <button onclick="fetchRates()" id="fetchBtn" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-md transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+      <button onclick="fetchRates()" id="fetchBtn" class="px-3 py-1 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-md transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
         🔄 获取实时汇率
       </button>
     </div>
@@ -30,7 +30,7 @@
       <label class="text-gray-800 font-medium text-sm sm:flex-1">加拿大汇率</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-r-0 rounded-l-md text-gray-700 text-xs font-semibold whitespace-nowrap">1 USD =</span>
-        <input id="cadRate" value="1.3667" oninput="convertCAD()" class="flex-1 px-3 border-2 border-gray-300 text-sm transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="cadRate" value="1.3667" oninput="convertCAD()" class="flex-1 px-3 border-2 border-gray-300 text-sm transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">CAD</span>
       </div>
     </div>
@@ -38,91 +38,91 @@
       <label class="text-gray-800 font-medium text-sm sm:flex-1">人民币汇率</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-r-0 rounded-l-md text-gray-700 text-xs font-semibold whitespace-nowrap">1 USD =</span>
-        <input id="cnyRate" value="7.24" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="cnyRate" value="7.24" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">CNY</span>
       </div>
     </div>
   </div>
 
-  <div class="bg-gray-100 p-4 rounded-lg mb-3 border-l-4 border-indigo-600">
+  <div class="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">加币成本</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-r-0 rounded-l-md text-gray-700 text-xs font-semibold">CAD</span>
-        <input id="cad" value="199" oninput="convertCAD()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-r-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="cad" value="199" oninput="convertCAD()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-r-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
       </div>
     </div>
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">折算美元</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-r-0 rounded-l-md text-gray-700 text-xs font-semibold">USD</span>
-        <input id="usd" value="145.668" oninput="convertUSD()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-r-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="usd" value="145.668" oninput="convertUSD()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-r-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
       </div>
     </div>
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">采购佣金</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
-        <input id="buyRate" value="2" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="buyRate" value="2" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">%</span>
       </div>
     </div>
   </div>
 
-  <div class="bg-gray-100 p-4 rounded-lg mb-3 border-l-4 border-indigo-600">
+  <div class="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">国际运费</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-r-0 rounded-l-md text-gray-700 text-xs font-semibold">¥</span>
-        <input id="ship" value="22.95" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-r-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="ship" value="25" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-r-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
       </div>
     </div>
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">保税仓费用</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-r-0 rounded-l-md text-gray-700 text-xs font-semibold">¥</span>
-        <input id="bond" value="12.52" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-r-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="bond" value="15" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-r-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
       </div>
     </div>
   </div>
 
-  <div class="bg-gray-100 p-4 rounded-lg mb-3 border-l-4 border-indigo-600">
+  <div class="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">平台抽佣</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
-        <input id="platform" value="6" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="platform" value="6" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">%</span>
       </div>
     </div>
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">税金</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
-        <input id="tax" value="9.11" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="tax" value="9.11" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">%</span>
       </div>
     </div>
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">带货佣金</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
-        <input id="live" value="1" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="live" value="1" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">%</span>
       </div>
     </div>
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">毛利</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
-        <input id="profit" value="5" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 hover:border-indigo-300">
+        <input id="profit" value="5" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
         <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">%</span>
       </div>
     </div>
   </div>
 
-  <div id="result" class="mt-4 p-4 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-lg text-center font-bold shadow-lg min-h-[50px] flex flex-col items-stretch justify-center"></div>
+  <div id="result" class="mt-4 p-4 bg-gray-800 text-white rounded-lg text-center font-bold shadow-lg min-h-[50px] flex flex-col items-stretch justify-center"></div>
 </div>
 
 <script>
-// 页面加载时立即计算
+// 页面加载时自动获取汇率并计算
 window.onload = function() {
-  calc();
+  fetchRates();
 };
 
 // 获取实时汇率
@@ -197,6 +197,8 @@ function calc() {
   const cnyRate = Number(document.getElementById("cnyRate").value);
 
   // 1️⃣ 进货成本
+  const baseCostCNY = usd * cnyRate;  // 基础成本
+  const buyCommissionCNY = usd * buyRate * cnyRate;  // 采购佣金
   const cost = usd * (1 + buyRate);
   const costCNY = cost * cnyRate;
 
@@ -216,17 +218,23 @@ function calc() {
   const taxFee = price * tax * cnyRate;
   const liveFee = price * live * cnyRate;
   const profitAmount = price * profit * cnyRate;
+  
+  // 计算总成本
+  const totalCost = costCNY + shipCNY + bondCNY + platformFee + taxFee + liveFee + profitAmount;
 
   document.getElementById("result").innerHTML =
-    "<div style='font-size: 22px; margin-bottom: 12px;'>最终售价: <strong>¥" + priceInCNY.toFixed(2) + "</strong></div>" +
-    "<div style='font-size: 12px; line-height: 1.6; text-align: left; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px;'>" +
-    "📦 进货成本: ¥" + costCNY.toFixed(2) + "<br>" +
-    "🚢 国际运费: ¥" + shipCNY.toFixed(2) + "<br>" +
-    "🏭 保税仓费: ¥" + bondCNY.toFixed(2) + "<br>" +
-    "🏪 平台抽佣: ¥" + platformFee.toFixed(2) + "<br>" +
-    "💰 税金: ¥" + taxFee.toFixed(2) + "<br>" +
-    "📺 带货佣金: ¥" + liveFee.toFixed(2) + "<br>" +
-    "✨ 毛利: ¥" + profitAmount.toFixed(2) +
+    "<div class='text-left space-y-1.5'>" +
+    "<div class='text-xs text-white/80 mb-2'>成本明细（按顺序）：</div>" +
+    "<div class='flex justify-between text-sm'><span>📦 进货成本</span><span class='font-semibold'>¥" + baseCostCNY.toFixed(2) + "</span></div>" +
+    "<div class='flex justify-between text-sm'><span>💼 采购佣金</span><span class='font-semibold'>¥" + buyCommissionCNY.toFixed(2) + "</span></div>" +
+    "<div class='flex justify-between text-sm'><span>🚢 国际运费</span><span class='font-semibold'>¥" + shipCNY.toFixed(2) + "</span></div>" +
+    "<div class='flex justify-between text-sm'><span>🏭 保税仓费</span><span class='font-semibold'>¥" + bondCNY.toFixed(2) + "</span></div>" +
+    "<div class='flex justify-between text-sm'><span>🏪 平台抽佣</span><span class='font-semibold'>¥" + platformFee.toFixed(2) + "</span></div>" +
+    "<div class='flex justify-between text-sm'><span>💰 税金</span><span class='font-semibold'>¥" + taxFee.toFixed(2) + "</span></div>" +
+    "<div class='flex justify-between text-sm'><span>📺 带货佣金</span><span class='font-semibold'>¥" + liveFee.toFixed(2) + "</span></div>" +
+    "<div class='flex justify-between text-sm'><span>✨ 毛利</span><span class='font-semibold'>¥" + profitAmount.toFixed(2) + "</span></div>" +
+    "<div class='border-t border-white/30 mt-2 pt-2'></div>" +
+    "<div class='flex justify-between text-lg font-bold'><span>🎯 最终售价</span><span>¥" + priceInCNY.toFixed(2) + "</span></div>" +
     "</div>";
 }
 </script>
