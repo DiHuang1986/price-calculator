@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>价格计算器</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      padding: 24px;
+      max-width: 550px;
+      width: 100%;
+      animation: slideIn 0.5s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    h2 {
+      color: #667eea;
+      text-align: center;
+      margin-bottom: 18px;
+      font-size: 26px;
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 3px solid #667eea;
+    }
+    
+    .row {
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .row label {
+      flex: 1;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .input-group {
+      display: flex;
+      align-items: stretch;
+      width: 240px;
+      height: 36px;
+    }
+    
+    .input-group-text {
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      background: #e9ecef;
+      border: 2px solid #e0e0e0;
+      color: #495057;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    .input-group-prepend .input-group-text {
+      border-right: none;
+      border-radius: 6px 0 0 6px;
+    }
+    
+    .input-group-append .input-group-text {
+      border-left: none;
+      border-radius: 0 6px 6px 0;
+    }
+    
+    .input-group input {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+      height: 100%;
+      padding: 0 12px;
+      border: 2px solid #e0e0e0;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background: white;
+      border-radius: 0;
+    }
+    
+    .input-group-prepend + input {
+      border-left: none;
+    }
+    
+    .input-group input + .input-group-append {
+      border-left: none;
+    }
+    
+    .input-group input:only-child {
+      border-radius: 6px;
+    }
+    
+    .input-group-prepend:first-child + input:last-child {
+      border-radius: 0 6px 6px 0;
+    }
+    
+    .input-group input:first-child:not(:only-child) {
+      border-radius: 6px 0 0 6px;
+    }
+    
+    input {
+      width: 120px;
+      height: 36px;
+      padding: 0 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background: white;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    input:hover {
+      border-color: #b8c1ff;
+    }
+    
+    hr {
+      border: none;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #667eea, transparent);
+      margin: 15px 0;
+    }
+    
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      margin-top: 8px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    #result {
+      margin-top: 15px;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+      min-height: 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+    }
+    
+    #result:empty {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>💰 价格计算器</h2>
+
+  <div class="section">
+    <div class="row">
+      <label>加拿大汇率</label>
+      <div class="input-group">
+        <span class="input-group-prepend"><span class="input-group-text">1 USD =</span></span>
+        <input id="cadRate" value="1.3667" oninput="convertCAD()">
+        <span class="input-group-append"><span class="input-group-text">CAD</span></span>
+      </div>
+    </div>
+    <div class="row">
+      <label>人民币汇率</label>
+      <div class="input-group">
+        <span class="input-group-prepend"><span class="input-group-text">1 USD =</span></span>
+        <input id="cnyRate" value="7.24" oninput="calc()">
+        <span class="input-group-append"><span class="input-group-text">CNY</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="row">
+      <label>加币成本</label>
+      <div class="input-group">
+        <span class="input-group-prepend"><span class="input-group-text">CAD</span></span>
+        <input id="cad" value="199" oninput="convertCAD()">
+      </div>
+    </div>
+    <div class="row">
+      <label>折算美元</label>
+      <div class="input-group">
+        <span class="input-group-prepend"><span class="input-group-text">USD</span></span>
+        <input id="usd" value="145.668" oninput="convertUSD()">
+      </div>
+    </div>
+    <div class="row">
+      <label>采购佣金</label>
+      <div class="input-group">
+        <input id="buyRate" value="2" oninput="calc()">
+        <span class="input-group-append"><span class="input-group-text">%</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="row">
+      <label>国际运费</label>
+      <div class="input-group">
+        <span class="input-group-prepend"><span class="input-group-text">¥</span></span>
+        <input id="ship" value="22.95" oninput="calc()">
+      </div>
+    </div>
+    <div class="row">
+      <label>保税仓费用</label>
+      <div class="input-group">
+        <span class="input-group-prepend"><span class="input-group-text">¥</span></span>
+        <input id="bond" value="12.52" oninput="calc()">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="row">
+      <label>平台抽佣</label>
+      <div class="input-group">
+        <input id="platform" value="6" oninput="calc()">
+        <span class="input-group-append"><span class="input-group-text">%</span></span>
+      </div>
+    </div>
+    <div class="row">
+      <label>税金</label>
+      <div class="input-group">
+        <input id="tax" value="9.11" oninput="calc()">
+        <span class="input-group-append"><span class="input-group-text">%</span></span>
+      </div>
+    </div>
+    <div class="row">
+      <label>带货佣金</label>
+      <div class="input-group">
+        <input id="live" value="1" oninput="calc()">
+        <span class="input-group-append"><span class="input-group-text">%</span></span>
+      </div>
+    </div>
+    <div class="row">
+      <label>毛利</label>
+      <div class="input-group">
+        <input id="profit" value="5" oninput="calc()">
+        <span class="input-group-append"><span class="input-group-text">%</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="result"></div>
+</div>
+
+<script>
+// 页面加载时立即计算
+window.onload = function() {
+  calc();
+};
+
+function convertCAD() {
+  const cad = Number(document.getElementById("cad").value);
+  const cadRate = Number(document.getElementById("cadRate").value);
+  const usd = cad / cadRate;
+  document.getElementById("usd").value = usd.toFixed(3);
+  calc();
+}
+
+function convertUSD() {
+  const usd = Number(document.getElementById("usd").value);
+  const cadRate = Number(document.getElementById("cadRate").value);
+  const cad = usd * cadRate;
+  document.getElementById("cad").value = cad.toFixed(2);
+  calc();
+}
+
+function calc() {
+  const usd = Number(document.getElementById("usd").value);
+  const buyRate = Number(document.getElementById("buyRate").value) / 100;
+
+  const shipCNY = Number(document.getElementById("ship").value);
+  const bondCNY = Number(document.getElementById("bond").value);
+
+  const platform = Number(document.getElementById("platform").value) / 100;
+  const tax = Number(document.getElementById("tax").value) / 100;
+  const live = Number(document.getElementById("live").value) / 100;
+  const profit = Number(document.getElementById("profit").value) / 100;
+
+  const cnyRate = Number(document.getElementById("cnyRate").value);
+
+  // 1️⃣ 进货成本
+  const cost = usd * (1 + buyRate);
+  const costCNY = cost * cnyRate;
+
+  // 运费和仓储费用（转换为美元用于计算）
+  const ship = shipCNY / cnyRate;
+  const bond = bondCNY / cnyRate;
+
+  // 2️⃣ 最终售价百分比
+  const finalRate = platform + tax + live + profit;
+
+  // 3️⃣ 反推售价
+  const price = (cost + ship + bond) / (1 - finalRate);
+  const priceInCNY = price * cnyRate;
+
+  // 各项费用
+  const platformFee = price * platform * cnyRate;
+  const taxFee = price * tax * cnyRate;
+  const liveFee = price * live * cnyRate;
+  const profitAmount = price * profit * cnyRate;
+
+  document.getElementById("result").innerHTML =
+    "<div style='font-size: 22px; margin-bottom: 12px;'>最终售价: <strong>¥" + priceInCNY.toFixed(2) + "</strong></div>" +
+    "<div style='font-size: 12px; line-height: 1.6; text-align: left; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px;'>" +
+    "📦 进货成本: ¥" + costCNY.toFixed(2) + "<br>" +
+    "🚢 国际运费: ¥" + shipCNY.toFixed(2) + "<br>" +
+    "🏭 保税仓费: ¥" + bondCNY.toFixed(2) + "<br>" +
+    "🏪 平台抽佣: ¥" + platformFee.toFixed(2) + "<br>" +
+    "💰 税金: ¥" + taxFee.toFixed(2) + "<br>" +
+    "📺 带货佣金: ¥" + liveFee.toFixed(2) + "<br>" +
+    "✨ 毛利: ¥" + profitAmount.toFixed(2) +
+    "</div>";
+}
+</script>
+
+</body>
+</html>
