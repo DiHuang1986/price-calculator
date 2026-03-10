@@ -6,12 +6,44 @@
   <title>价格计算器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap');
+
     @keyframes slideIn {
       from { opacity: 0; transform: translateY(-20px); }
       to { opacity: 1; transform: translateY(0); }
     }
     .animate-slide-in { animation: slideIn 0.5s ease-out; }
     #result:empty { display: none; }
+
+    @media (min-width: 640px) {
+      .bg-gray-50 div[class*="sm:flex-row"][class*="sm:justify-between"][class*="sm:items-center"] {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 15rem);
+        align-items: center;
+        column-gap: 0.5rem;
+      }
+    }
+
+    .bg-gray-50 div[class*="sm:flex-row"][class*="sm:justify-between"][class*="sm:items-center"] > label {
+      min-width: 0;
+    }
+
+    .bg-gray-50 div[class*="sm:w-60"] {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    @media (min-width: 640px) {
+      .bg-gray-50 div[class*="sm:w-60"] {
+        max-width: 15rem;
+      }
+    }
+
+    .bg-gray-50 div[class*="sm:w-60"] input {
+      min-width: 0;
+      width: 100%;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-2.5 pt-5 flex justify-center items-start sm:p-4 sm:items-center">
@@ -94,13 +126,6 @@
       </div>
     </div>
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
-      <label class="text-gray-800 font-medium text-sm sm:flex-1">税金</label>
-      <div class="flex items-stretch h-9 w-full sm:w-60">
-        <input id="tax" value="9.11" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
-        <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">%</span>
-      </div>
-    </div>
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
       <label class="text-gray-800 font-medium text-sm sm:flex-1">带货佣金</label>
       <div class="flex items-stretch h-9 w-full sm:w-60">
         <input id="live" value="1" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
@@ -116,7 +141,18 @@
     </div>
   </div>
 
-  <div id="result" class="mt-4 p-4 bg-gray-800 text-white rounded-lg text-center font-bold shadow-lg min-h-[50px] flex flex-col items-stretch justify-center"></div>
+  <div class="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
+    <div class="text-gray-700 font-semibold text-sm mb-3">税费设置</div>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2.5 last:mb-0">
+      <label class="text-gray-800 font-medium text-sm sm:flex-1">税金</label>
+      <div class="flex items-stretch h-9 w-full sm:w-60">
+        <input id="tax" value="9.11" oninput="calc()" class="flex-1 px-3 border-2 border-gray-300 text-sm rounded-l-md transition-all focus:outline-none focus:border-gray-800 focus:ring-2 focus:ring-gray-200 hover:border-gray-400">
+        <span class="flex items-center px-2.5 bg-gray-200 border-2 border-gray-300 border-l-0 rounded-r-md text-gray-700 text-xs font-semibold">%</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="result" class="mt-4 min-h-[50px]"></div>
 </div>
 
 <script>
@@ -206,35 +242,67 @@ function calc() {
   const ship = shipCNY / cnyRate;
   const bond = bondCNY / cnyRate;
 
-  // 2️⃣ 最终售价百分比
-  const finalRate = platform + tax + live + profit;
+  // 2️⃣ 先计算不含税基础售价（税前）
+  const baseRate = platform + live + profit;
+  const basePrice = (cost + ship + bond) / (1 - baseRate);
 
-  // 3️⃣ 反推售价
-  const price = (cost + ship + bond) / (1 - finalRate);
+  // 3️⃣ 税金按基础售价计算：finalPrice = basePrice + basePrice * tax
+  const price = basePrice * (1 + tax);
   const priceInCNY = price * cnyRate;
 
-  // 各项费用
-  const platformFee = price * platform * cnyRate;
-  const taxFee = price * tax * cnyRate;
-  const liveFee = price * live * cnyRate;
-  const profitAmount = price * profit * cnyRate;
+  // 其他费率费用（不含税）
+  const platformFee = basePrice * platform * cnyRate;
+  const liveFee = basePrice * live * cnyRate;
+  const profitAmount = basePrice * profit * cnyRate;
+
+  // 税金（独立计算）
+  const taxFee = basePrice * tax * cnyRate;
+  const otherFeesTotal = platformFee + liveFee + profitAmount;
   
   // 计算总成本
-  const totalCost = costCNY + shipCNY + bondCNY + platformFee + taxFee + liveFee + profitAmount;
+  const totalCost = costCNY + shipCNY + bondCNY + otherFeesTotal + taxFee;
+
+  const formatCNY = (amount) => "¥" + amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 
   document.getElementById("result").innerHTML =
-    "<div class='text-left space-y-1.5'>" +
-    "<div class='text-xs text-white/80 mb-2'>成本明细（按顺序）：</div>" +
-    "<div class='flex justify-between text-sm'><span>📦 进货成本</span><span class='font-semibold'>¥" + baseCostCNY.toFixed(2) + "</span></div>" +
-    "<div class='flex justify-between text-sm'><span>💼 采购佣金</span><span class='font-semibold'>¥" + buyCommissionCNY.toFixed(2) + "</span></div>" +
-    "<div class='flex justify-between text-sm'><span>🚢 国际运费</span><span class='font-semibold'>¥" + shipCNY.toFixed(2) + "</span></div>" +
-    "<div class='flex justify-between text-sm'><span>🏭 保税仓费</span><span class='font-semibold'>¥" + bondCNY.toFixed(2) + "</span></div>" +
-    "<div class='flex justify-between text-sm'><span>🏪 平台抽佣</span><span class='font-semibold'>¥" + platformFee.toFixed(2) + "</span></div>" +
-    "<div class='flex justify-between text-sm'><span>💰 税金</span><span class='font-semibold'>¥" + taxFee.toFixed(2) + "</span></div>" +
-    "<div class='flex justify-between text-sm'><span>📺 带货佣金</span><span class='font-semibold'>¥" + liveFee.toFixed(2) + "</span></div>" +
-    "<div class='flex justify-between text-sm'><span>✨ 毛利</span><span class='font-semibold'>¥" + profitAmount.toFixed(2) + "</span></div>" +
-    "<div class='border-t border-white/30 mt-2 pt-2'></div>" +
-    "<div class='flex justify-between text-lg font-bold'><span>🎯 最终售价</span><span>¥" + priceInCNY.toFixed(2) + "</span></div>" +
+    "<div class='rounded-xl border border-gray-200 bg-white shadow-sm p-4 sm:p-5 text-gray-800'>" +
+    "<div class='flex items-end justify-between border-b border-gray-200 pb-3 mb-3'>" +
+    "<div>" +
+    "<div class='text-xs text-gray-500 tracking-wide'>报价结果</div>" +
+    "<div class='text-sm font-semibold text-gray-800'>成本与费用明细</div>" +
+    "</div>" +
+    "<div class='text-right'>" +
+    "<div class='text-xs text-gray-500'>最终售价</div>" +
+    "<div class='text-2xl font-bold text-gray-900'>" + formatCNY(priceInCNY) + "</div>" +
+    "</div>" +
+    "</div>" +
+    "<div class='space-y-3 text-sm'>" +
+    "<div class='space-y-1.5'>" +
+    "<div class='text-xs font-semibold text-gray-500'>成本项</div>" +
+    "<div class='flex justify-between text-gray-700'><span>进货成本</span><span class='font-semibold'>" + formatCNY(baseCostCNY) + "</span></div>" +
+    "<div class='flex justify-between text-gray-700'><span>采购佣金</span><span class='font-semibold'>" + formatCNY(buyCommissionCNY) + "</span></div>" +
+    "<div class='flex justify-between text-gray-700'><span>国际运费</span><span class='font-semibold'>" + formatCNY(shipCNY) + "</span></div>" +
+    "<div class='flex justify-between text-gray-700'><span>保税仓费</span><span class='font-semibold'>" + formatCNY(bondCNY) + "</span></div>" +
+    "</div>" +
+    "<div class='space-y-1.5 pt-2 border-t border-gray-100'>" +
+    "<div class='text-xs font-semibold text-gray-500'>其他费率项（不含税）</div>" +
+    "<div class='flex justify-between text-gray-700'><span>平台抽佣</span><span class='font-semibold'>" + formatCNY(platformFee) + "</span></div>" +
+    "<div class='flex justify-between text-gray-700'><span>带货佣金</span><span class='font-semibold'>" + formatCNY(liveFee) + "</span></div>" +
+    "<div class='flex justify-between text-gray-700'><span>毛利</span><span class='font-semibold'>" + formatCNY(profitAmount) + "</span></div>" +
+    "<div class='flex justify-between text-gray-800'><span>其他费用小计</span><span class='font-semibold'>" + formatCNY(otherFeesTotal) + "</span></div>" +
+    "</div>" +
+    "<div class='space-y-1.5 pt-2 border-t border-gray-200'>" +
+    "<div class='text-xs font-semibold text-gray-500'>税费（单独）</div>" +
+    "<div class='flex justify-between text-gray-800'><span>税金</span><span class='font-semibold'>" + formatCNY(taxFee) + "</span></div>" +
+    "</div>" +
+    "<div class='pt-3 border-t border-gray-200 space-y-1.5'>" +
+    "<div class='flex justify-between text-gray-800'><span>总成本</span><span class='font-semibold'>" + formatCNY(totalCost) + "</span></div>" +
+    "<div class='flex justify-between text-base font-bold text-gray-900'><span>建议售价</span><span>" + formatCNY(priceInCNY) + "</span></div>" +
+    "</div>" +
+    "</div>" +
     "</div>";
 }
 </script>
