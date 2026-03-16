@@ -242,18 +242,18 @@ function calc() {
   const ship = shipCNY / cnyRate;
   const bond = bondCNY / cnyRate;
 
-  // 2️⃣ 先计算不含税基础售价（税前）
+  // 2️⃣ 其他费率按含税最终售价计算，先反推含税最终售价
   const baseRate = platform + live + profit;
-  const basePrice = (cost + ship + bond) / (1 - baseRate);
-
-  // 3️⃣ 税金按基础售价计算：finalPrice = basePrice + basePrice * tax
-  const price = basePrice * (1 + tax);
+  const taxRateOnFinal = tax / (1 + tax); // 税金按税前基数计提，折算为最终售价占比
+  const finalRate = baseRate + taxRateOnFinal;
+  const price = (cost + ship + bond) / (1 - finalRate);
+  const basePrice = price / (1 + tax);
   const priceInCNY = price * cnyRate;
 
-  // 其他费率费用（不含税）
-  const platformFee = basePrice * platform * cnyRate;
-  const liveFee = basePrice * live * cnyRate;
-  const profitAmount = basePrice * profit * cnyRate;
+  // 其他费率费用（按含税最终售价）
+  const platformFee = price * platform * cnyRate;
+  const liveFee = price * live * cnyRate;
+  const profitAmount = price * profit * cnyRate;
 
   // 税金（独立计算）
   const taxFee = basePrice * tax * cnyRate;
@@ -288,7 +288,7 @@ function calc() {
     "<div class='flex justify-between text-gray-700'><span>保税仓费</span><span class='font-semibold'>" + formatCNY(bondCNY) + "</span></div>" +
     "</div>" +
     "<div class='space-y-1.5 pt-2 border-t border-gray-100'>" +
-    "<div class='text-xs font-semibold text-gray-500'>其他费率项（不含税）</div>" +
+    "<div class='text-xs font-semibold text-gray-500'>其他费率项（按含税最终售价）</div>" +
     "<div class='flex justify-between text-gray-700'><span>平台抽佣</span><span class='font-semibold'>" + formatCNY(platformFee) + "</span></div>" +
     "<div class='flex justify-between text-gray-700'><span>带货佣金</span><span class='font-semibold'>" + formatCNY(liveFee) + "</span></div>" +
     "<div class='flex justify-between text-gray-700'><span>毛利</span><span class='font-semibold'>" + formatCNY(profitAmount) + "</span></div>" +
