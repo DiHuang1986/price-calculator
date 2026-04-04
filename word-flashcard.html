@@ -4,9 +4,84 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>Word Flashcard App</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 	<script src="https://cdn.tailwindcss.com"></script>
 	<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 	<style>
+		:root {
+			--ink: #12213a;
+			--muted: #60718e;
+			--panel: rgba(255, 255, 255, 0.78);
+			--panel-border: rgba(148, 163, 184, 0.25);
+		}
+
+		body {
+			font-family: "Sora", "Segoe UI", sans-serif;
+			background:
+				radial-gradient(circle at 10% 20%, #d7f2ff 0%, transparent 36%),
+				radial-gradient(circle at 88% 12%, #ffe7c8 0%, transparent 33%),
+				linear-gradient(140deg, #edf2f7 0%, #dfe8f3 45%, #d9e4f0 100%);
+			color: var(--ink);
+		}
+
+		.hero {
+			background: linear-gradient(125deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.62));
+			border: 1px solid var(--panel-border);
+			backdrop-filter: blur(8px);
+			box-shadow: 0 24px 48px -32px rgba(19, 36, 67, 0.5);
+		}
+
+		.panel {
+			background: var(--panel);
+			border: 1px solid var(--panel-border);
+			backdrop-filter: blur(7px);
+			box-shadow: 0 18px 34px -28px rgba(18, 33, 58, 0.55);
+		}
+
+		.home-card {
+			position: relative;
+			overflow: hidden;
+		}
+
+		.home-card::after {
+			content: "";
+			position: absolute;
+			right: -48px;
+			top: -48px;
+			width: 140px;
+			height: 140px;
+			border-radius: 999px;
+			opacity: 0.18;
+			background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+		}
+
+		button {
+			transition: transform 0.16s ease, box-shadow 0.2s ease, filter 0.2s ease;
+		}
+
+		button:hover:not(:disabled) {
+			transform: translateY(-1px);
+			box-shadow: 0 14px 22px -16px rgba(30, 64, 175, 0.55);
+			filter: saturate(1.07);
+		}
+
+		.screen-enter {
+			animation: liftIn 0.45s ease both;
+		}
+
+		@keyframes liftIn {
+			from {
+				opacity: 0;
+				transform: translateY(12px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
 		.flashcard-wrap {
 			perspective: 1200px;
 		}
@@ -16,7 +91,8 @@
 			width: 100%;
 			height: 100%;
 			transform-style: preserve-3d;
-			transition: transform 0.45s ease;
+			transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+			will-change: transform;
 		}
 
 		.flashcard-inner.flipped {
@@ -32,11 +108,25 @@
 		.flashcard-back {
 			transform: rotateY(180deg);
 		}
+
+		.card-content {
+			transition:
+				opacity 0.22s ease,
+				transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+				filter 0.22s ease;
+			will-change: opacity, transform;
+		}
+
+		.card-content--hidden {
+			opacity: 0;
+			transform: translateY(6px) scale(0.985);
+			filter: blur(1px);
+		}
 	</style>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900">
+<body class="min-h-screen text-slate-900">
 	<div id="app" class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-		<header class="mb-8 rounded-2xl bg-white p-6 shadow-sm">
+		<header class="hero mb-8 rounded-3xl p-6 sm:p-8">
 			<h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Word Flashcard</h1>
 			<p class="mt-2 text-sm text-slate-600 sm:text-base">
 				Learn in groups of 10 words, then pass the quiz to complete a group.
@@ -47,16 +137,18 @@
 			<div v-if="loadError" class="rounded-2xl bg-rose-50 p-6 text-rose-700 shadow-sm">{{ loadError }}</div>
 			<div v-else-if="sourceWords.length === 0" class="rounded-2xl bg-white p-6 text-slate-500 shadow-sm">Loading word list…</div>
 			<template v-else>
-			<section v-if="screen === 'home'" class="space-y-6">
-				<div class="grid gap-4 md:grid-cols-2">
-					<div class="rounded-2xl bg-white p-6 shadow-sm">
+			<section v-if="screen === 'home'" class="screen-enter space-y-6">
+				<div class="grid gap-4 md:grid-cols-3">
+					<div class="panel home-card flex h-full flex-col rounded-3xl p-6">
 						<h2 class="text-lg font-semibold">Learn</h2>
-						<p class="mt-2 text-sm text-slate-600">
-							Next group: <span class="font-semibold text-slate-800">{{ nextLearnGroupLabel }}</span>
-						</p>
-						<p class="mt-1 text-sm text-slate-500">{{ learnedCount }} / {{ groups.length }} groups completed at least once</p>
+						<div class="mt-2 min-h-[5.5rem] space-y-1">
+							<p class="text-sm text-slate-600">
+								Next group: <span class="font-semibold text-slate-800">{{ nextLearnGroupLabel }}</span>
+							</p>
+							<p class="text-sm text-slate-500">{{ learnedCount }} / {{ groups.length }} groups completed at least once</p>
+						</div>
 						<button
-							class="mt-4 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+							class="mt-auto w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-300"
 							:disabled="!nextLearnGroup"
 							@click="startLearn"
 						>
@@ -64,23 +156,42 @@
 						</button>
 					</div>
 
-					<div class="rounded-2xl bg-white p-6 shadow-sm">
+					<div class="panel home-card flex h-full flex-col rounded-3xl p-6">
 						<h2 class="text-lg font-semibold">Revisit</h2>
-						<p class="mt-2 text-sm text-slate-600">
-							Next due: <span class="font-semibold text-slate-800">{{ nextRevisitGroupLabel }}</span>
-						</p>
-						<p class="mt-1 text-sm text-slate-500">{{ dueRevisitCount }} groups waiting for revisit</p>
+						<div class="mt-2 min-h-[5.5rem] space-y-1">
+							<p class="text-sm text-slate-600">
+								Next due: <span class="font-semibold text-slate-800">{{ nextRevisitGroupLabel }}</span>
+							</p>
+							<p class="text-sm text-slate-500">{{ dueRevisitCount }} groups waiting for revisit</p>
+						</div>
 						<button
-							class="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+							class="mt-auto w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
 							:disabled="!nextRevisitGroup"
 							@click="startRevisit"
 						>
 							Start Revisit
 						</button>
 					</div>
+
+					<div class="panel home-card flex h-full flex-col rounded-3xl p-6">
+						<h2 class="text-lg font-semibold">Quiz</h2>
+						<div class="mt-2 min-h-[5.5rem] space-y-1">
+							<p class="text-sm text-slate-600">
+								From learned words: <span class="font-semibold text-slate-800">{{ learnedWordCount }}</span>
+							</p>
+							<p class="text-sm text-slate-500">Pick random 20 words for a mixed quiz</p>
+						</div>
+						<button
+							class="mt-auto w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+							:disabled="learnedWordCount < 20"
+							@click="startMixedQuiz"
+						>
+							Start Mixed Quiz (20)
+						</button>
+					</div>
 				</div>
 
-				<div class="rounded-2xl bg-white p-6 shadow-sm">
+				<div class="panel rounded-3xl p-6">
 					<h3 class="text-base font-semibold">Group Progress</h3>
 					<div class="mt-4 overflow-x-auto">
 						<table class="min-w-full text-sm">
@@ -89,7 +200,8 @@
 									<th class="py-2 pr-4">Group</th>
 									<th class="py-2 pr-4">Learned Date</th>
 									<th class="py-2 pr-4">Next Revisit</th>
-									<th class="py-2 pr-4">Stage</th>
+									<th class="py-2 pr-4">Status</th>
+									<th class="py-2 pr-4">Actions</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -98,9 +210,24 @@
 									<td class="py-2 pr-4">{{ formatDate(group.learnedDate) }}</td>
 									<td class="py-2 pr-4">{{ formatDate(group.nextRevisitDate) }}</td>
 									<td class="py-2 pr-4">
-										<span v-if="!group.learnedDate" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">Not started</span>
-										<span v-else-if="isDue(group)" class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">Due</span>
-										<span v-else class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">Scheduled</span>
+										<span class="rounded-full px-2 py-0.5 text-xs" :class="stageInfo(group).badgeClass">{{ stageInfo(group).label }}</span>
+										<p class="mt-1 text-xs text-slate-500">{{ stageInfo(group).detail }}</p>
+									</td>
+									<td class="py-2 pr-4">
+										<div class="flex gap-2">
+											<button
+												class="rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-500"
+												@click="startGroupRevisit(group.id)"
+											>
+												Revisit
+											</button>
+											<button
+												class="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
+												@click="startGroupQuiz(group.id)"
+											>
+												Quiz
+											</button>
+										</div>
 									</td>
 								</tr>
 							</tbody>
@@ -109,15 +236,15 @@
 				</div>
 			</section>
 
-			<section v-else-if="screen === 'learn'" class="space-y-4">
-				<div class="rounded-2xl bg-white p-5 shadow-sm">
+			<section v-else-if="screen === 'learn'" class="screen-enter space-y-4">
+				<div class="panel rounded-3xl p-5">
 					<div class="flex items-center justify-between">
 						<p class="text-sm font-semibold text-sky-700">{{ activeGroup.label }} - Learning {{ learnIndex + 1 }} / {{ activeGroup.words.length }}</p>
 						<button class="text-sm text-slate-500 hover:text-slate-700" @click="goHome">Exit</button>
 					</div>
 				</div>
 
-				<div class="rounded-2xl bg-white p-6 shadow-sm">
+				<div class="panel rounded-3xl p-6">
 					<div class="mx-auto w-full max-w-xs">
 						<div
 							class="flashcard-wrap h-[460px] cursor-pointer select-none"
@@ -125,7 +252,7 @@
 						>
 							<div class="flashcard-inner" :class="{ flipped: isFlipped }">
 								<div class="flashcard-face rounded-3xl border border-sky-200 bg-gradient-to-b from-sky-100 to-sky-200 p-6 shadow-lg">
-									<div class="flex h-full flex-col items-center justify-center text-center">
+									<div class="card-content flex h-full flex-col items-center justify-center text-center" :class="{ 'card-content--hidden': !cardWordVisible }">
 										<p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Word</p>
 										<h2 class="mt-5 text-5xl font-bold leading-tight text-sky-900">{{ currentWord.word }}</h2>
 										<p class="mt-10 text-xs text-sky-700">Tap card to flip</p>
@@ -133,7 +260,7 @@
 								</div>
 
 								<div class="flashcard-face flashcard-back rounded-3xl border border-indigo-200 bg-gradient-to-b from-indigo-50 to-indigo-100 p-6 shadow-lg">
-									<div class="flex h-full flex-col">
+									<div class="card-content flex h-full flex-col" :class="{ 'card-content--hidden': !cardWordVisible }">
 										<div>
 											<p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700">Word</p>
 											<h3 class="mt-2 text-3xl font-bold text-indigo-950">{{ currentWord.word }}</h3>
@@ -165,17 +292,17 @@
 				</div>
 			</section>
 
-			<section v-else-if="screen === 'quiz'" class="space-y-4">
-				<div class="rounded-2xl bg-white p-5 shadow-sm">
+			<section v-else-if="screen === 'quiz'" class="screen-enter space-y-4">
+				<div class="panel rounded-3xl p-5">
 					<div class="flex items-center justify-between">
 						<p class="text-sm font-semibold text-emerald-700">
-							{{ activeGroup.label }} - Quiz | Remaining queue: {{ quizQueue.length }} | Passed: {{ quizPassedCount }}
+							{{ quizSessionLabel }} - Quiz | Remaining queue: {{ quizQueue.length }} | Passed: {{ quizPassedCount }}
 						</p>
 						<button class="text-sm text-slate-500 hover:text-slate-700" @click="goHome">Exit</button>
 					</div>
 				</div>
 
-				<div class="rounded-2xl bg-white p-6 shadow-sm">
+				<div class="panel rounded-3xl p-6">
 					<div class="text-center">
 						<h2 class="text-3xl font-bold">{{ quizWord.word }}</h2>
 						<p
@@ -189,19 +316,20 @@
 					<div class="mt-6 grid gap-3">
 						<button
 							v-for="(option, idx) in quizOptions"
-							:key="idx"
+							:key="option.id"
 							:disabled="!!quizFeedback"
-							class="rounded-lg border px-4 py-3 text-left text-sm font-medium transition disabled:cursor-not-allowed"
+							class="rounded-lg border px-4 py-3 text-left transition disabled:cursor-not-allowed"
 							:class="quizFeedback
-								? (option === quizFeedback.correct
+								? (option.id === quizFeedback.correctId
 									? 'border-emerald-400 bg-emerald-50 text-emerald-800'
-									: option === quizFeedback.chosen && !quizFeedback.ok
+									: option.id === quizFeedback.chosenId && !quizFeedback.ok
 										? 'border-rose-400 bg-rose-50 text-rose-800'
 										: 'border-slate-200 bg-white text-slate-400')
 								: 'border-slate-200 bg-white hover:border-slate-400'"
 							@click="submitQuiz(option)"
 						>
-							{{ option }}
+							<p class="text-sm font-semibold">{{ option.chinese }}</p>
+							<p class="mt-1 text-xs text-slate-600" :class="quizFeedback ? 'text-inherit' : 'text-slate-600'">{{ option.english }}</p>
 						</button>
 					</div>
 
@@ -211,7 +339,7 @@
 				</div>
 			</section>
 
-			<section v-else-if="screen === 'done'" class="rounded-2xl bg-white p-6 shadow-sm">
+			<section v-else-if="screen === 'done'" class="screen-enter panel rounded-3xl p-6">
 				<h2 class="text-xl font-bold">Group Completed</h2>
 				<p class="mt-2 text-slate-600">
 					{{ activeGroup.label }} is done for now. Next revisit date: <span class="font-semibold">{{ formatDate(activeGroup.nextRevisitDate) }}</span>
@@ -2386,7 +2514,7 @@
 		];
 
 
-		const REVIEW_INTERVALS = [1, 3, 7, 14, 30, 60];
+		const REVIEW_INTERVALS = [1, 2, 4, 7, 10, 14];
 		const STORAGE_KEY = "word-flashcard-progress-v2";
 
 		function isoToday() {
@@ -2436,8 +2564,12 @@
 					screen: "home",
 					activeGroupId: null,
 					activeMode: null,
+					quizSessionLabel: "",
+					quizWords: [],
+					wrongWords: {},
 					learnIndex: 0,
 					isFlipped: false,
+					cardWordVisible: true,
 					learnTransitioning: false,
 					quizQueue: [],
 					quizCurrentIndex: null,
@@ -2455,9 +2587,9 @@
 					return this.activeGroup.words[this.learnIndex] || null;
 				},
 				quizWord() {
-					if (!this.activeGroup || this.quizCurrentIndex === null) return null;
+					if (!this.quizWords.length || this.quizCurrentIndex === null) return null;
 					const wordIndex = this.quizCurrentIndex;
-					return this.activeGroup.words[wordIndex];
+					return this.quizWords[wordIndex];
 				},
 				learnedCount() {
 					return this.groups.filter((g) => Boolean(g.learnedDate)).length;
@@ -2477,22 +2609,82 @@
 				nextRevisitGroupLabel() {
 					return this.nextRevisitGroup ? this.nextRevisitGroup.label : "No group due yet";
 				},
+				learnedWordCount() {
+					return this.groups
+						.filter((g) => Boolean(g.learnedDate))
+						.reduce((sum, g) => sum + g.words.length, 0);
+				},
 				quizPassedCount() {
 					return this.quizPassed.length;
 				}
 			},
 			methods: {
+				wordKey(word) {
+					return `${word.group}::${word.word}::${word.pronounce}`;
+				},
+				wrongWordWeight(word) {
+					const record = this.wrongWords[this.wordKey(word)];
+					if (!record) return 1;
+					const failBoost = Math.min(8, (record.failCount || 0) * 2);
+					const recoveryBoost = Math.max(0, 3 - (record.correctCount || 0));
+					return 1 + failBoost + recoveryBoost;
+				},
+				pickWeightedWords(words, count) {
+					const pool = [...words];
+					const selected = [];
+					while (pool.length > 0 && selected.length < count) {
+						let total = 0;
+						for (const w of pool) total += this.wrongWordWeight(w);
+						let roll = Math.random() * total;
+						let chosenIdx = 0;
+						for (let i = 0; i < pool.length; i += 1) {
+							roll -= this.wrongWordWeight(pool[i]);
+							if (roll <= 0) {
+								chosenIdx = i;
+								break;
+							}
+						}
+						selected.push(pool[chosenIdx]);
+						pool.splice(chosenIdx, 1);
+					}
+					return selected;
+				},
+				markWrongWord(word) {
+					const key = this.wordKey(word);
+					const prev = this.wrongWords[key] || { failCount: 0, correctCount: 0 };
+					this.wrongWords[key] = {
+						failCount: prev.failCount + 1,
+						correctCount: 0
+					};
+				},
+				markCorrectWord(word) {
+					const key = this.wordKey(word);
+					const prev = this.wrongWords[key];
+					if (!prev) return;
+					const nextCorrect = (prev.correctCount || 0) + 1;
+					if (nextCorrect >= 3) {
+						delete this.wrongWords[key];
+						return;
+					}
+					this.wrongWords[key] = {
+						failCount: prev.failCount || 1,
+						correctCount: nextCorrect
+					};
+				},
 				loadProgress() {
 					const defaults = getDefaultGroups(this.sourceWords);
 					try {
 						const raw = localStorage.getItem(STORAGE_KEY);
 						if (!raw) {
 							this.groups = defaults;
+							this.wrongWords = {};
 							return;
 						}
 						const parsed = JSON.parse(raw);
+						const savedGroups = Array.isArray(parsed) ? parsed : (parsed.groups || []);
+						this.wrongWords = Array.isArray(parsed) ? {} : (parsed.wrongWords || {});
 						this.groups = defaults.map((group) => {
-							const saved = parsed.find((g) => g.id === group.id);
+							const saved = savedGroups.find((g) => g.id === group.id);
 							if (!saved) return group;
 							return {
 								...group,
@@ -2507,18 +2699,56 @@
 					}
 				},
 				saveProgress() {
-					const payload = this.groups.map((g) => ({
-						id: g.id,
-						learnedDate: g.learnedDate,
-						nextRevisitDate: g.nextRevisitDate,
-						level: g.level
-					}));
+					const payload = {
+						groups: this.groups.map((g) => ({
+							id: g.id,
+							learnedDate: g.learnedDate,
+							nextRevisitDate: g.nextRevisitDate,
+							level: g.level
+						})),
+						wrongWords: this.wrongWords
+					};
 					localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 				},
 				formatDate(dateStr) {
 					if (!dateStr) return "-";
 					const dt = new Date(dateStr + "T00:00:00");
 					return dt.toLocaleDateString();
+				},
+				daysUntil(dateStr) {
+					if (!dateStr) return null;
+					const today = new Date(isoToday() + "T00:00:00");
+					const target = new Date(dateStr + "T00:00:00");
+					return Math.round((target - today) / 86400000);
+				},
+				stageInfo(group) {
+					if (!group.learnedDate) {
+						return {
+							label: "Not learned",
+							detail: "Start this list from Learn",
+							badgeClass: "bg-slate-100 text-slate-700"
+						};
+					}
+					if (!group.nextRevisitDate) {
+						return {
+							label: "Ready",
+							detail: "Can be reviewed anytime",
+							badgeClass: "bg-slate-100 text-slate-700"
+						};
+					}
+					const days = this.daysUntil(group.nextRevisitDate);
+					if (days <= 0) {
+						return {
+							label: "Due now",
+							detail: "Revisit today",
+							badgeClass: "bg-amber-100 text-amber-700"
+						};
+					}
+					return {
+						label: `Review in ${days} day${days === 1 ? "" : "s"}`,
+						detail: "On schedule",
+						badgeClass: "bg-emerald-100 text-emerald-700"
+					};
 				},
 				isDue(group) {
 					if (!group.learnedDate || !group.nextRevisitDate) return false;
@@ -2532,6 +2762,7 @@
 					window.speechSynthesis.speak(utter);
 				},
 				toggleLearnFlip() {
+					if (this.learnTransitioning) return;
 					this.isFlipped = !this.isFlipped;
 					if (this.isFlipped && this.currentWord) {
 						this.speak(this.currentWord.word);
@@ -2541,8 +2772,11 @@
 					this.screen = "home";
 					this.activeGroupId = null;
 					this.activeMode = null;
+					this.quizSessionLabel = "";
+					this.quizWords = [];
 					this.learnIndex = 0;
 					this.isFlipped = false;
+					this.cardWordVisible = true;
 					this.learnTransitioning = false;
 					this.quizQueue = [];
 					this.quizCurrentIndex = null;
@@ -2558,11 +2792,51 @@
 					if (!this.nextRevisitGroup) return;
 					this.beginStudy(this.nextRevisitGroup.id, "revisit");
 				},
+				startGroupRevisit(groupId) {
+					this.beginStudy(groupId, "manual-revisit");
+				},
+				startGroupQuiz(groupId) {
+					this.activeGroupId = groupId;
+					this.activeMode = "manual-quiz";
+					this.learnIndex = 0;
+					this.isFlipped = false;
+					this.learnTransitioning = false;
+					this.quizSessionLabel = "";
+					this.quizWords = [];
+					this.quizQueue = [];
+					this.quizCurrentIndex = null;
+					this.quizPassed = [];
+					this.quizOptions = [];
+					this.quizFeedback = null;
+					const label = this.groups.find((g) => g.id === groupId)?.label || "Group Quiz";
+					this.startQuiz(null, label);
+				},
+				startMixedQuiz() {
+					const learnedWords = this.groups
+						.filter((g) => Boolean(g.learnedDate))
+						.flatMap((g) => g.words);
+					if (learnedWords.length < 20) return;
+					this.activeGroupId = null;
+					this.activeMode = "mixed-quiz";
+					this.learnIndex = 0;
+					this.isFlipped = false;
+					this.learnTransitioning = false;
+					this.quizQueue = [];
+					this.quizCurrentIndex = null;
+					this.quizPassed = [];
+					this.quizOptions = [];
+					this.quizFeedback = null;
+					const picked = this.pickWeightedWords(learnedWords, 20);
+					this.startQuiz(picked, "Mixed 20");
+				},
 				beginStudy(groupId, mode) {
 					this.activeGroupId = groupId;
 					this.activeMode = mode;
+					this.quizSessionLabel = "";
+					this.quizWords = [];
 					this.learnIndex = 0;
 					this.isFlipped = false;
+					this.cardWordVisible = true;
 					this.learnTransitioning = false;
 					this.quizQueue = [];
 					this.quizCurrentIndex = null;
@@ -2585,19 +2859,30 @@
 
 					if (this.isFlipped) {
 						this.learnTransitioning = true;
-						this.isFlipped = false;
+						this.cardWordVisible = false;
+
+						const FADE_OUT_MS = 90;
+						const FLIP_MS = 360;
 						setTimeout(() => {
-							this.learnTransitioning = false;
+							this.isFlipped = false;
+						}, FADE_OUT_MS);
+
+						setTimeout(() => {
 							advance();
-						}, 460);
+							this.learnTransitioning = false;
+							this.cardWordVisible = true;
+						}, FADE_OUT_MS + FLIP_MS);
 						return;
 					}
 
 					advance();
 				},
-				startQuiz() {
-					if (!this.activeGroup) return;
-					this.quizQueue = this.activeGroup.words.map((_, idx) => idx);
+				startQuiz(words = null, label = null) {
+					const pool = words || this.activeGroup?.words || [];
+					if (pool.length === 0) return;
+					this.quizWords = pool;
+					this.quizSessionLabel = label || this.activeGroup?.label || "Quiz";
+					this.quizQueue = pool.map((_, idx) => idx);
 					this.quizCurrentIndex = null;
 					this.quizPassed = [];
 					this.quizFeedback = null;
@@ -2605,29 +2890,40 @@
 					this.prepareQuizQuestion();
 				},
 				prepareQuizQuestion() {
-					if (!this.activeGroup || this.quizQueue.length === 0) {
+					if (this.quizQueue.length === 0) {
 						this.quizCurrentIndex = null;
 						this.finishGroup();
 						return;
 					}
 					this.quizCurrentIndex = this.quizQueue[0];
 					const correctWord = this.quizWord;
-					const wrongPool = this.activeGroup.words
-						.map((w) => w.chinese)
-						.filter((ex) => ex && ex !== correctWord.chinese);
+					const wrongPool = this.quizWords
+						.map((w, idx) => ({ id: idx, chinese: w.chinese, english: w.english }))
+						.filter((opt) => opt.id !== this.quizCurrentIndex && opt.chinese);
 					const wrongOptions = shuffle(wrongPool).slice(0, 3);
-					this.quizOptions = shuffle([correctWord.chinese, ...wrongOptions]);
+					const correctOption = {
+						id: this.quizCurrentIndex,
+						chinese: correctWord.chinese,
+						english: correctWord.english
+					};
+					this.quizOptions = shuffle([correctOption, ...wrongOptions]);
 					this.quizFeedback = null;
+					this.speak(correctWord.word);
 				},
 				submitQuiz(chosen) {
 					if (!this.quizWord || this.quizFeedback) return;
 					// Keep current word stable while showing feedback.
 					const correctWord = this.quizWord;
 					const currentIndex = this.quizCurrentIndex;
-					const isCorrect = chosen === correctWord.chinese;
+					const isCorrect = chosen.id === currentIndex;
+					if (isCorrect) {
+						this.markCorrectWord(correctWord);
+					} else {
+						this.markWrongWord(correctWord);
+					}
 					this.quizFeedback = isCorrect
-						? { ok: true, chosen, correct: correctWord.chinese, message: 'Correct!' }
-						: { ok: false, chosen, correct: correctWord.chinese, message: `Wrong — correct answer: ${correctWord.chinese}` };
+						? { ok: true, chosenId: chosen.id, correctId: currentIndex, message: 'Correct!' }
+						: { ok: false, chosenId: chosen.id, correctId: currentIndex, message: `Wrong — correct answer: ${correctWord.chinese} | ${correctWord.english}` };
 
 					setTimeout(() => {
 						if (this.quizQueue[0] === currentIndex) {
@@ -2638,11 +2934,22 @@
 						} else {
 							this.quizQueue.push(currentIndex);
 						}
+						this.saveProgress();
 						this.prepareQuizQuestion();
 					}, 1200);
 				},
 				finishGroup() {
+					if (this.activeMode === "mixed-quiz") {
+						this.goHome();
+						return;
+					}
 					if (!this.activeGroup) return;
+					const isManualSession = this.activeMode === "manual-revisit" || this.activeMode === "manual-quiz";
+					if (isManualSession) {
+						this.screen = "done";
+						return;
+					}
+
 					const today = isoToday();
 					if (!this.activeGroup.learnedDate) {
 						this.activeGroup.learnedDate = today;
