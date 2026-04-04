@@ -217,9 +217,9 @@
 										<div class="flex gap-2">
 											<button
 												class="rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-500"
-												@click="startGroupRevisit(group.id)"
+												@click="startGroupPrimary(group)"
 											>
-												Revisit
+												{{ group.learnedDate ? 'Revisit' : 'Learn' }}
 											</button>
 											<button
 												class="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
@@ -2791,6 +2791,13 @@
 				startRevisit() {
 					if (!this.nextRevisitGroup) return;
 					this.beginStudy(this.nextRevisitGroup.id, "revisit");
+				},
+				startGroupPrimary(group) {
+					if (!group.learnedDate) {
+						this.beginStudy(group.id, "learn");
+						return;
+					}
+					this.beginStudy(group.id, "manual-revisit");
 				},
 				startGroupRevisit(groupId) {
 					this.beginStudy(groupId, "manual-revisit");
