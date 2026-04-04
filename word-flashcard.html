@@ -222,6 +222,7 @@
 												{{ group.learnedDate ? 'Revisit' : 'Learn' }}
 											</button>
 											<button
+												v-if="group.learnedDate"
 												class="rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
 												@click="startGroupQuiz(group.id)"
 											>
@@ -2818,6 +2819,8 @@
 					this.beginStudy(groupId, "manual-revisit");
 				},
 				startGroupQuiz(groupId) {
+					const group = this.groups.find((g) => g.id === groupId);
+					if (!group || !group.learnedDate) return;
 					this.activeGroupId = groupId;
 					this.activeMode = "manual-quiz";
 					this.learnIndex = 0;
