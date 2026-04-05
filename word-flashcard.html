@@ -192,6 +192,52 @@
 				</div>
 
 				<div class="panel rounded-3xl p-6">
+					<div class="flex items-center justify-between gap-3">
+						<h3 class="text-base font-semibold">Quiz Score Summary</h3>
+						<p class="text-xs text-slate-500">Stored locally in this browser</p>
+					</div>
+					<div v-if="quizHistory.length === 0" class="mt-3 text-sm text-slate-500">No quiz records yet.</div>
+					<template v-else>
+						<div class="mt-4 grid gap-3 sm:grid-cols-3">
+							<div class="rounded-xl border border-slate-200/80 bg-white/70 p-3">
+								<p class="text-xs text-slate-500">Total Quizzes</p>
+								<p class="mt-1 text-lg font-bold text-slate-800">{{ quizHistoryCount }}</p>
+							</div>
+							<div class="rounded-xl border border-slate-200/80 bg-white/70 p-3">
+								<p class="text-xs text-slate-500">Average Accuracy</p>
+								<p class="mt-1 text-lg font-bold text-slate-800">{{ quizAvgAccuracy }}%</p>
+							</div>
+							<div class="rounded-xl border border-slate-200/80 bg-white/70 p-3">
+								<p class="text-xs text-slate-500">Best Accuracy</p>
+								<p class="mt-1 text-lg font-bold text-slate-800">{{ quizBestAccuracy }}%</p>
+							</div>
+						</div>
+						<div class="mt-4 overflow-x-auto">
+							<table class="min-w-full text-sm">
+								<thead>
+									<tr class="border-b text-left text-slate-600">
+										<th class="py-2 pr-4">Time</th>
+										<th class="py-2 pr-4">Session</th>
+										<th class="py-2 pr-4">Accuracy</th>
+										<th class="py-2 pr-4">First Try</th>
+										<th class="py-2 pr-4">Attempts</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="item in quizRecentHistory" :key="item.id" class="border-b last:border-b-0">
+										<td class="py-2 pr-4">{{ formatDateTime(item.completedAt) }}</td>
+										<td class="py-2 pr-4 font-medium">{{ item.label }}</td>
+										<td class="py-2 pr-4">{{ item.accuracy }}%</td>
+										<td class="py-2 pr-4">{{ item.firstTryCorrect }} / {{ item.totalQuestions }}</td>
+										<td class="py-2 pr-4">{{ item.attempts }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</template>
+				</div>
+
+				<div class="panel rounded-3xl p-6">
 					<h3 class="text-base font-semibold">Group Progress</h3>
 					<div class="mt-4 space-y-3 md:hidden">
 						<div v-for="group in groups" :key="`mobile-${group.id}`" class="rounded-2xl border border-slate-200/80 bg-white/70 p-4">
@@ -380,6 +426,31 @@
 						{{ quizFeedback.message }}
 					</p>
 				</div>
+			</section>
+
+			<section v-else-if="screen === 'quiz-result'" class="screen-enter panel rounded-3xl p-6">
+				<h2 class="text-xl font-bold">Quiz Completed</h2>
+				<p class="mt-2 text-slate-600">{{ lastQuizResult.label }} completed.</p>
+				<div class="mt-4 grid gap-3 sm:grid-cols-3">
+					<div class="rounded-xl border border-slate-200/80 bg-white/70 p-3">
+						<p class="text-xs text-slate-500">Accuracy</p>
+						<p class="mt-1 text-lg font-bold text-slate-800">{{ lastQuizResult.accuracy }}%</p>
+					</div>
+					<div class="rounded-xl border border-slate-200/80 bg-white/70 p-3">
+						<p class="text-xs text-slate-500">First Try Correct</p>
+						<p class="mt-1 text-lg font-bold text-slate-800">{{ lastQuizResult.firstTryCorrect }} / {{ lastQuizResult.totalQuestions }}</p>
+					</div>
+					<div class="rounded-xl border border-slate-200/80 bg-white/70 p-3">
+						<p class="text-xs text-slate-500">Total Attempts</p>
+						<p class="mt-1 text-lg font-bold text-slate-800">{{ lastQuizResult.attempts }}</p>
+					</div>
+				</div>
+				<p v-if="activeGroup && activeGroup.nextRevisitDate" class="mt-4 text-sm text-slate-600">
+					Next revisit date: <span class="font-semibold">{{ formatDate(activeGroup.nextRevisitDate) }}</span>
+				</p>
+				<button class="mt-5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700" @click="goHome">
+					Back to Main
+				</button>
 			</section>
 
 			<section v-else-if="screen === 'done'" class="screen-enter panel rounded-3xl p-6">
@@ -2558,6 +2629,7 @@
 
 		const REVIEW_INTERVALS = [1, 2, 4, 7, 10, 14];
 		const STORAGE_KEY = "word-flashcard-progress-v2";
+		const QUIZ_HISTORY_KEY = "word-flashcard-quiz-history-v1";
 
 		function isoToday() {
 			return new Date().toISOString().slice(0, 10);
@@ -2617,9 +2689,14 @@
 					quizQueue: [],
 					quizCurrentIndex: null,
 					quizPassed: [],
+					quizAttemptCount: 0,
+					quizFirstTryCorrect: 0,
+					quizAttemptMap: {},
 					quizOptions: [],
 					quizFeedback: null,
-					quizType: "word-to-meaning"
+					quizType: "word-to-meaning",
+					quizHistory: [],
+					lastQuizResult: null
 				};
 			},
 			computed: {
@@ -2660,6 +2737,21 @@
 				},
 				quizPassedCount() {
 					return this.quizPassed.length;
+				},
+				quizHistoryCount() {
+					return this.quizHistory.length;
+				},
+				quizAvgAccuracy() {
+					if (!this.quizHistory.length) return 0;
+					const total = this.quizHistory.reduce((sum, item) => sum + item.accuracy, 0);
+					return Math.round(total / this.quizHistory.length);
+				},
+				quizBestAccuracy() {
+					if (!this.quizHistory.length) return 0;
+					return Math.max(...this.quizHistory.map((item) => item.accuracy));
+				},
+				quizRecentHistory() {
+					return this.quizHistory.slice(0, 10);
 				}
 			},
 			methods: {
@@ -2742,6 +2834,47 @@
 						this.groups = defaults;
 					}
 				},
+				loadQuizHistory() {
+					try {
+						const raw = localStorage.getItem(QUIZ_HISTORY_KEY);
+						if (!raw) {
+							this.quizHistory = [];
+							return;
+						}
+						const parsed = JSON.parse(raw);
+						this.quizHistory = Array.isArray(parsed) ? parsed : [];
+					} catch (err) {
+						console.error("Failed to load quiz history", err);
+						this.quizHistory = [];
+					}
+				},
+				saveQuizHistory() {
+					localStorage.setItem(QUIZ_HISTORY_KEY, JSON.stringify(this.quizHistory));
+				},
+				resetQuizStats() {
+					this.quizAttemptCount = 0;
+					this.quizFirstTryCorrect = 0;
+					this.quizAttemptMap = {};
+				},
+				finalizeQuizResult() {
+					const totalQuestions = this.quizWords.length;
+					if (totalQuestions === 0) return null;
+					const accuracy = Math.round((this.quizFirstTryCorrect / totalQuestions) * 100);
+					const result = {
+						id: Date.now(),
+						completedAt: new Date().toISOString(),
+						label: this.quizSessionLabel || this.activeGroup?.label || "Quiz",
+						mode: this.activeMode || "quiz",
+						totalQuestions,
+						firstTryCorrect: this.quizFirstTryCorrect,
+						attempts: this.quizAttemptCount,
+						accuracy
+					};
+					this.lastQuizResult = result;
+					this.quizHistory = [result, ...this.quizHistory].slice(0, 100);
+					this.saveQuizHistory();
+					return result;
+				},
 				saveProgress() {
 					const payload = {
 						groups: this.groups.map((g) => ({
@@ -2758,6 +2891,10 @@
 					if (!dateStr) return "-";
 					const dt = new Date(dateStr + "T00:00:00");
 					return dt.toLocaleDateString();
+				},
+				formatDateTime(dateTimeStr) {
+					if (!dateTimeStr) return "-";
+					return new Date(dateTimeStr).toLocaleString();
 				},
 				daysUntil(dateStr) {
 					if (!dateStr) return null;
@@ -2826,6 +2963,7 @@
 					this.quizQueue = [];
 					this.quizCurrentIndex = null;
 					this.quizPassed = [];
+					this.resetQuizStats();
 					this.quizOptions = [];
 					this.quizFeedback = null;
 					this.quizType = "word-to-meaning";
@@ -2943,6 +3081,7 @@
 					this.quizQueue = pool.map((_, idx) => idx);
 					this.quizCurrentIndex = null;
 					this.quizPassed = [];
+					this.resetQuizStats();
 					this.quizFeedback = null;
 					this.screen = "quiz";
 					this.prepareQuizQuestion();
@@ -2991,7 +3130,13 @@
 					// Keep current word stable while showing feedback.
 					const correctWord = this.quizWord;
 					const currentIndex = this.quizCurrentIndex;
+					const seenCount = this.quizAttemptMap[currentIndex] || 0;
+					this.quizAttemptMap[currentIndex] = seenCount + 1;
+					this.quizAttemptCount += 1;
 					const isCorrect = chosen.id === currentIndex;
+					if (isCorrect && seenCount === 0) {
+						this.quizFirstTryCorrect += 1;
+					}
 					if (isCorrect) {
 						this.markCorrectWord(correctWord);
 					} else {
@@ -3018,14 +3163,15 @@
 					}, 1200);
 				},
 				finishGroup() {
+					this.finalizeQuizResult();
 					if (this.activeMode === "mixed-quiz") {
-						this.goHome();
+						this.screen = "quiz-result";
 						return;
 					}
 					if (!this.activeGroup) return;
 					const isManualSession = this.activeMode === "manual-revisit" || this.activeMode === "manual-quiz";
 					if (isManualSession) {
-						this.screen = "done";
+						this.screen = "quiz-result";
 						return;
 					}
 
@@ -3039,7 +3185,7 @@
 					this.activeGroup.nextRevisitDate = addDays(today, REVIEW_INTERVALS[nextLevel]);
 
 					this.saveProgress();
-					this.screen = "done";
+					this.screen = "quiz-result";
 				},
 				resetAll() {
 					this.groups = getDefaultGroups(this.sourceWords);
@@ -3050,6 +3196,7 @@
 			mounted() {
 				this.sourceWords = SOURCE_WORDS;
 				this.loadProgress();
+				this.loadQuizHistory();
 			}
 		}).mount("#app");
 	</script>
