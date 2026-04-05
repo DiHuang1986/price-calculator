@@ -268,7 +268,7 @@
 			<section v-else-if="screen === 'learn'" class="screen-enter space-y-4">
 				<div class="panel rounded-3xl p-5">
 					<div class="flex items-center justify-between">
-						<p class="text-sm font-semibold text-sky-700">{{ activeGroup.label }} - Learning {{ learnIndex + 1 }} / {{ activeGroup.words.length }}</p>
+						<p class="text-sm font-semibold text-sky-700">{{ activeGroup.label }} - Learning {{ learnIndex + 1 }} / {{ learnWords.length }}</p>
 						<button class="text-sm text-slate-500 hover:text-slate-700" @click="goHome">Exit</button>
 					</div>
 				</div>
@@ -2609,6 +2609,7 @@
 					quizSessionLabel: "",
 					quizWords: [],
 					wrongWords: {},
+					learnWords: [],
 					learnIndex: 0,
 					isFlipped: false,
 					cardWordVisible: true,
@@ -2626,8 +2627,8 @@
 					return this.groups.find((g) => g.id === this.activeGroupId) || null;
 				},
 				currentWord() {
-					if (!this.activeGroup) return null;
-					return this.activeGroup.words[this.learnIndex] || null;
+					if (!this.learnWords.length) return null;
+					return this.learnWords[this.learnIndex] || null;
 				},
 				quizWord() {
 					if (!this.quizWords.length || this.quizCurrentIndex === null) return null;
@@ -2817,6 +2818,7 @@
 					this.activeMode = null;
 					this.quizSessionLabel = "";
 					this.quizWords = [];
+					this.learnWords = [];
 					this.learnIndex = 0;
 					this.isFlipped = false;
 					this.cardWordVisible = true;
@@ -2883,10 +2885,13 @@
 					this.startQuiz(picked, "Mixed 20");
 				},
 				beginStudy(groupId, mode) {
+					const group = this.groups.find((g) => g.id === groupId);
+					if (!group || !Array.isArray(group.words) || group.words.length === 0) return;
 					this.activeGroupId = groupId;
 					this.activeMode = mode;
 					this.quizSessionLabel = "";
 					this.quizWords = [];
+					this.learnWords = shuffle(group.words);
 					this.learnIndex = 0;
 					this.isFlipped = false;
 					this.cardWordVisible = true;
@@ -2903,7 +2908,7 @@
 					if (this.learnTransitioning) return;
 
 					const advance = () => {
-						if (this.learnIndex < this.activeGroup.words.length - 1) {
+						if (this.learnIndex < this.learnWords.length - 1) {
 							this.learnIndex += 1;
 							return;
 						}
