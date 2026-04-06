@@ -102,6 +102,40 @@
 			transform: rotateY(180deg);
 		}
 
+		.flashcard-inner.no-flip-transition {
+			transition: none;
+		}
+
+		.flashcard-wrap.slide-out-left {
+			animation: cardSlideOutLeft 0.28s ease-in both;
+		}
+
+		.flashcard-wrap.slide-in-right {
+			animation: cardSlideInRight 0.28s ease-out both;
+		}
+
+		@keyframes cardSlideOutLeft {
+			from {
+				opacity: 1;
+				transform: translateX(0);
+			}
+			to {
+				opacity: 0;
+				transform: translateX(-52px);
+			}
+		}
+
+		@keyframes cardSlideInRight {
+			from {
+				opacity: 0;
+				transform: translateX(52px);
+			}
+			to {
+				opacity: 1;
+				transform: translateX(0);
+			}
+		}
+
 		.flashcard-face {
 			position: absolute;
 			inset: 0;
@@ -351,9 +385,10 @@
 					<div class="mx-auto w-full max-w-xs">
 						<div
 							class="flashcard-wrap h-[460px] cursor-pointer select-none"
+							:class="{ 'slide-out-left': learnSlideOutLeft, 'slide-in-right': learnSlideInRight }"
 							@click="toggleLearnFlip"
 						>
-							<div class="flashcard-inner" :class="{ flipped: isFlipped }">
+							<div class="flashcard-inner" :class="{ flipped: isFlipped, 'no-flip-transition': suppressFlipTransition }">
 								<div class="flashcard-face rounded-3xl border border-sky-200 bg-gradient-to-b from-sky-100 to-sky-200 p-6 shadow-lg">
 									<div class="card-content flex h-full flex-col items-center justify-center text-center" :class="{ 'card-content--hidden': !cardWordVisible }">
 										<p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Word</p>
@@ -407,7 +442,7 @@
 
 				<div class="panel rounded-3xl p-6">
 					<!-- word-to-meaning: show word, pick meaning -->
-					<div v-if="quizType === 'word-to-meaning'" class="text-center">
+					<div v-if="quizType === 'word-to-meaning'" class="text-left">
 						<p class="text-xs font-semibold uppercase tracking-widest text-sky-500">Word &rarr; Meaning</p>
 						<h2 class="mt-3 text-3xl font-bold">{{ quizWord.word }}</h2>
 						<p
@@ -575,6 +610,9 @@
 					learnWords: [],
 					learnIndex: 0,
 					isFlipped: false,
+					suppressFlipTransition: false,
+					learnSlideOutLeft: false,
+					learnSlideInRight: false,
 					cardWordVisible: true,
 					learnTransitioning: false,
 					quizQueue: [],
@@ -960,6 +998,9 @@
 					this.learnWords = [];
 					this.learnIndex = 0;
 					this.isFlipped = false;
+					this.suppressFlipTransition = false;
+					this.learnSlideOutLeft = false;
+					this.learnSlideInRight = false;
 					this.cardWordVisible = true;
 					this.learnTransitioning = false;
 					this.quizQueue = [];
@@ -995,6 +1036,9 @@
 					this.activeMode = "manual-quiz";
 					this.learnIndex = 0;
 					this.isFlipped = false;
+					this.suppressFlipTransition = false;
+					this.learnSlideOutLeft = false;
+					this.learnSlideInRight = false;
 					this.learnTransitioning = false;
 					this.quizSessionLabel = "";
 					this.quizWords = [];
@@ -1015,6 +1059,9 @@
 					this.activeMode = "mixed-quiz";
 					this.learnIndex = 0;
 					this.isFlipped = false;
+					this.suppressFlipTransition = false;
+					this.learnSlideOutLeft = false;
+					this.learnSlideInRight = false;
 					this.learnTransitioning = false;
 					this.quizQueue = [];
 					this.quizCurrentIndex = null;
@@ -1034,6 +1081,9 @@
 					this.learnWords = shuffle(group.words);
 					this.learnIndex = 0;
 					this.isFlipped = false;
+					this.suppressFlipTransition = false;
+					this.learnSlideOutLeft = false;
+					this.learnSlideInRight = false;
 					this.cardWordVisible = true;
 					this.learnTransitioning = false;
 					this.quizQueue = [];
@@ -1057,19 +1107,20 @@
 
 					if (this.isFlipped) {
 						this.learnTransitioning = true;
-						this.cardWordVisible = false;
-
-						const FADE_OUT_MS = 90;
-						const FLIP_MS = 360;
-						setTimeout(() => {
-							this.isFlipped = false;
-						}, FADE_OUT_MS);
-
+						this.learnSlideOutLeft = true;
 						setTimeout(() => {
 							advance();
-							this.learnTransitioning = false;
+							this.suppressFlipTransition = true;
+							this.isFlipped = false;
+							this.learnSlideOutLeft = false;
+							this.learnSlideInRight = true;
+							setTimeout(() => {
+								this.learnSlideInRight = false;
+								this.suppressFlipTransition = false;
+								this.learnTransitioning = false;
+							}, 280);
 							this.cardWordVisible = true;
-						}, FADE_OUT_MS + FLIP_MS);
+						}, 280);
 						return;
 					}
 
