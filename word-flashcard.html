@@ -9,6 +9,9 @@
 	<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 	<script src="https://cdn.tailwindcss.com"></script>
 	<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 	<style>
 		:root {
 			--ink: #12213a;
@@ -138,6 +141,31 @@
 			<div v-else-if="sourceWords.length === 0" class="rounded-2xl bg-white p-6 text-slate-500 shadow-sm">Loading word list…</div>
 			<template v-else>
 			<section v-if="screen === 'home'" class="screen-enter space-y-6">
+				<div class="panel rounded-3xl p-6">
+					<div class="flex items-center justify-between gap-3">
+						<h3 class="text-base font-semibold">Cloud Sync</h3>
+						<p class="text-xs text-slate-500">{{ syncStatus }}</p>
+					</div>
+					<div v-if="!cloudEnabled" class="mt-3 text-sm text-slate-500">
+						Cloud is off. Fill `FIREBASE_CONFIG` in this file to enable online sync.
+					</div>
+					<div v-else-if="!authReady" class="mt-3 text-sm text-slate-500">Checking sign-in status...</div>
+					<div v-else-if="!user" class="mt-3">
+						<button
+							class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+							@click="signInWithGoogle"
+						>
+							Sign In With Google
+						</button>
+						<p class="mt-2 text-xs text-slate-500">Use the same Google account on multiple devices to share progress.</p>
+					</div>
+					<div v-else class="mt-3 flex items-center justify-between gap-3">
+						<p class="text-sm text-slate-600">Signed in as <span class="font-semibold text-slate-800">{{ user.email || user.uid }}</span></p>
+						<button class="rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300" @click="signOutUser">Sign Out</button>
+					</div>
+					<p v-if="authMessage" class="mt-2 text-xs text-slate-500">{{ authMessage }}</p>
+				</div>
+
 				<div class="grid gap-4 md:grid-cols-3">
 					<div class="panel home-card flex h-full flex-col rounded-3xl p-6">
 						<h2 class="text-lg font-semibold">Learn</h2>
@@ -194,7 +222,7 @@
 				<div class="panel rounded-3xl p-6">
 					<div class="flex items-center justify-between gap-3">
 						<h3 class="text-base font-semibold">Quiz Score Summary</h3>
-						<p class="text-xs text-slate-500">Stored locally in this browser</p>
+						<p class="text-xs text-slate-500">{{ cloudEnabled && user ? 'Synced online and cached locally' : 'Stored locally in this browser' }}</p>
 					</div>
 					<div v-if="quizHistory.length === 0" class="mt-3 text-sm text-slate-500">No quiz records yet.</div>
 					<template v-else>
@@ -470,6 +498,25 @@
 		const { createApp } = Vue;
 
 		const WORDS_SOURCE_URL = "./Mogu Edu-214-Words.json";
+		const FIREBASE_CONFIG = {
+			apiKey: "AIzaSyBeB1W_wNSnRDYjdmZdlxuKM5WOtbUuzwo",
+            authDomain: "word-flashcard-bdac1.firebaseapp.com",
+            projectId: "word-flashcard-bdac1",
+            storageBucket: "word-flashcard-bdac1.firebasestorage.app",
+            messagingSenderId: "798908048995",
+            appId: "1:798908048995:web:0ec3c46fa71ce3d787ba56",
+            measurementId: "G-RNEFPECKFB"
+		};
+		const firebaseEnabled = Boolean(
+			window.firebase &&
+			FIREBASE_CONFIG.apiKey &&
+			FIREBASE_CONFIG.authDomain &&
+			FIREBASE_CONFIG.projectId &&
+			FIREBASE_CONFIG.appId
+		);
+		const firebaseApp = firebaseEnabled ? window.firebase.initializeApp(FIREBASE_CONFIG) : null;
+		const firebaseAuth = firebaseEnabled ? window.firebase.auth(firebaseApp) : null;
+		const firebaseDb = firebaseEnabled ? window.firebase.firestore(firebaseApp) : null;
 
 		const REVIEW_INTERVALS = [1, 2, 4, 7, 10, 14];
 		const STORAGE_KEY = "word-flashcard-progress-v2";
@@ -540,10 +587,18 @@
 					quizFeedback: null,
 					quizType: "word-to-meaning",
 					quizHistory: [],
-					lastQuizResult: null
+					lastQuizResult: null,
+					authReady: false,
+					user: null,
+					authMessage: "",
+					syncStatus: "Local only",
+					cloudSaveTimer: null
 				};
 			},
 			computed: {
+				cloudEnabled() {
+					return Boolean(firebaseEnabled && firebaseAuth && firebaseDb);
+				},
 				activeGroup() {
 					return this.groups.find((g) => g.id === this.activeGroupId) || null;
 				},
@@ -599,6 +654,106 @@
 				}
 			},
 			methods: {
+				applySavedProgress(savedGroups, savedWrongWords) {
+					const defaults = getDefaultGroups(this.sourceWords);
+					this.wrongWords = savedWrongWords && typeof savedWrongWords === "object" ? savedWrongWords : {};
+					this.groups = defaults.map((group) => {
+						const saved = Array.isArray(savedGroups) ? savedGroups.find((g) => g.id === group.id) : null;
+						if (!saved) return group;
+						return {
+							...group,
+							learnedDate: saved.learnedDate || null,
+							nextRevisitDate: saved.nextRevisitDate || null,
+							level: Number.isInteger(saved.level) ? saved.level : 0
+						};
+					});
+				},
+				buildProgressPayload() {
+					return {
+						groups: this.groups.map((g) => ({
+							id: g.id,
+							learnedDate: g.learnedDate,
+							nextRevisitDate: g.nextRevisitDate,
+							level: g.level
+						})),
+						wrongWords: this.wrongWords
+					};
+				},
+				queueCloudSave() {
+					if (!this.cloudEnabled || !this.user) return;
+					if (this.cloudSaveTimer) clearTimeout(this.cloudSaveTimer);
+					this.cloudSaveTimer = setTimeout(() => {
+						this.saveCloudState();
+					}, 500);
+				},
+				async saveCloudState() {
+					if (!this.cloudEnabled || !this.user) return;
+					try {
+						const progress = this.buildProgressPayload();
+						await firebaseDb.collection("user_progress").doc(this.user.uid).set({
+							groups_json: progress.groups,
+							wrong_words_json: progress.wrongWords,
+							quiz_history_json: this.quizHistory,
+							updated_at: window.firebase.firestore.FieldValue.serverTimestamp()
+						}, { merge: true });
+						this.syncStatus = `Synced ${new Date().toLocaleTimeString()}`;
+					} catch (err) {
+						console.error("Failed to save cloud state", err);
+						this.syncStatus = "Sync failed";
+					}
+				},
+				async loadCloudState() {
+					if (!this.cloudEnabled || !this.user) return;
+					try {
+						const doc = await firebaseDb.collection("user_progress").doc(this.user.uid).get();
+						if (!doc.exists) {
+							this.syncStatus = "No cloud record yet";
+							this.queueCloudSave();
+							return;
+						}
+						const data = doc.data() || {};
+						this.applySavedProgress(data.groups_json || [], data.wrong_words_json || {});
+						this.quizHistory = Array.isArray(data.quiz_history_json) ? data.quiz_history_json : [];
+						localStorage.setItem(STORAGE_KEY, JSON.stringify(this.buildProgressPayload()));
+						localStorage.setItem(QUIZ_HISTORY_KEY, JSON.stringify(this.quizHistory));
+						this.syncStatus = "Cloud data loaded";
+					} catch (err) {
+						console.error("Failed to load cloud state", err);
+						this.syncStatus = "Cloud read failed";
+					}
+				},
+				initCloudAuth() {
+					if (!this.cloudEnabled) {
+						this.authReady = true;
+						this.syncStatus = "Local only";
+						return;
+					}
+					firebaseAuth.onAuthStateChanged(async (user) => {
+						this.user = user || null;
+						this.authReady = true;
+						if (this.user) {
+							this.syncStatus = "Syncing...";
+							await this.loadCloudState();
+						} else {
+							this.syncStatus = "Signed out (local only)";
+						}
+					});
+				},
+				async signInWithGoogle() {
+					if (!this.cloudEnabled) return;
+					this.authMessage = "";
+					try {
+						const provider = new window.firebase.auth.GoogleAuthProvider();
+						await firebaseAuth.signInWithPopup(provider);
+					} catch (err) {
+						this.authMessage = `Sign in failed: ${err.message}`;
+					}
+				},
+				async signOutUser() {
+					if (!this.cloudEnabled) return;
+					await firebaseAuth.signOut();
+					this.authMessage = "Signed out.";
+				},
 				async loadSourceWords() {
 					this.loadError = null;
 					try {
@@ -613,6 +768,7 @@
 						this.sourceWords = words;
 						this.loadProgress();
 						this.loadQuizHistory();
+						this.initCloudAuth();
 					} catch (err) {
 						console.error("Failed to load word list", err);
 						this.loadError = "Failed to load Mogu Edu-214-Words.json. Make sure the file exists in the project root.";
@@ -671,30 +827,19 @@
 					};
 				},
 				loadProgress() {
-					const defaults = getDefaultGroups(this.sourceWords);
 					try {
 						const raw = localStorage.getItem(STORAGE_KEY);
 						if (!raw) {
-							this.groups = defaults;
-							this.wrongWords = {};
+							this.applySavedProgress([], {});
 							return;
 						}
 						const parsed = JSON.parse(raw);
 						const savedGroups = Array.isArray(parsed) ? parsed : (parsed.groups || []);
-						this.wrongWords = Array.isArray(parsed) ? {} : (parsed.wrongWords || {});
-						this.groups = defaults.map((group) => {
-							const saved = savedGroups.find((g) => g.id === group.id);
-							if (!saved) return group;
-							return {
-								...group,
-								learnedDate: saved.learnedDate || null,
-								nextRevisitDate: saved.nextRevisitDate || null,
-								level: Number.isInteger(saved.level) ? saved.level : 0
-							};
-						});
+						const savedWrongWords = Array.isArray(parsed) ? {} : (parsed.wrongWords || {});
+						this.applySavedProgress(savedGroups, savedWrongWords);
 					} catch (err) {
 						console.error("Failed to load progress", err);
-						this.groups = defaults;
+						this.applySavedProgress([], {});
 					}
 				},
 				loadQuizHistory() {
@@ -713,6 +858,7 @@
 				},
 				saveQuizHistory() {
 					localStorage.setItem(QUIZ_HISTORY_KEY, JSON.stringify(this.quizHistory));
+					this.queueCloudSave();
 				},
 				resetQuizStats() {
 					this.quizAttemptCount = 0;
@@ -739,16 +885,9 @@
 					return result;
 				},
 				saveProgress() {
-					const payload = {
-						groups: this.groups.map((g) => ({
-							id: g.id,
-							learnedDate: g.learnedDate,
-							nextRevisitDate: g.nextRevisitDate,
-							level: g.level
-						})),
-						wrongWords: this.wrongWords
-					};
+					const payload = this.buildProgressPayload();
 					localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+					this.queueCloudSave();
 				},
 				formatDate(dateStr) {
 					if (!dateStr) return "-";
