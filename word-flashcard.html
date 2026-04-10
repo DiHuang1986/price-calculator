@@ -419,8 +419,10 @@
 				<div class="panel rounded-3xl p-6">
 					<div class="mx-auto w-full max-w-xs">
 						<div
-							class="flashcard-wrap h-[460px] cursor-pointer select-none"
-							:class="{ 'slide-out-left': learnSlideOutLeft, 'slide-in-right': learnSlideInRight }"
+							class="flashcard-wrap h-[460px] select-none"
+							:class="[{ 'slide-out-left': learnSlideOutLeft, 'slide-in-right': learnSlideInRight }, learnFlipArmed ? 'cursor-pointer' : 'cursor-default']"
+							@pointermove="armLearnFlip"
+							@pointerleave="armLearnFlip"
 							@click="toggleLearnFlip"
 						>
 							<div class="flashcard-inner" :class="{ flipped: isFlipped, 'no-flip-transition': suppressFlipTransition }">
@@ -649,6 +651,7 @@
 					learnSlideOutLeft: false,
 					learnSlideInRight: false,
 					cardWordVisible: true,
+					learnFlipArmed: true,
 					learnTransitioning: false,
 					quizQueue: [],
 					quizCurrentIndex: null,
@@ -1007,8 +1010,12 @@
 					window.speechSynthesis.cancel();
 					window.speechSynthesis.speak(utter);
 				},
+				armLearnFlip() {
+					if (this.learnTransitioning || this.learnFlipArmed) return;
+					this.learnFlipArmed = true;
+				},
 				toggleLearnFlip() {
-					if (this.learnTransitioning) return;
+					if (this.learnTransitioning || !this.learnFlipArmed) return;
 					this.isFlipped = !this.isFlipped;
 					if (this.isFlipped && this.currentWord) {
 						this.speak(this.currentWord.word);
@@ -1027,6 +1034,7 @@
 					this.learnSlideOutLeft = false;
 					this.learnSlideInRight = false;
 					this.cardWordVisible = true;
+					this.learnFlipArmed = true;
 					this.learnTransitioning = false;
 					this.quizQueue = [];
 					this.quizCurrentIndex = null;
@@ -1064,6 +1072,7 @@
 					this.suppressFlipTransition = false;
 					this.learnSlideOutLeft = false;
 					this.learnSlideInRight = false;
+					this.learnFlipArmed = true;
 					this.learnTransitioning = false;
 					this.quizSessionLabel = "";
 					this.quizWords = [];
@@ -1087,6 +1096,7 @@
 					this.suppressFlipTransition = false;
 					this.learnSlideOutLeft = false;
 					this.learnSlideInRight = false;
+					this.learnFlipArmed = true;
 					this.learnTransitioning = false;
 					this.quizQueue = [];
 					this.quizCurrentIndex = null;
@@ -1110,6 +1120,7 @@
 					this.learnSlideOutLeft = false;
 					this.learnSlideInRight = false;
 					this.cardWordVisible = true;
+					this.learnFlipArmed = true;
 					this.learnTransitioning = false;
 					this.quizQueue = [];
 					this.quizCurrentIndex = null;
@@ -1132,6 +1143,7 @@
 
 					if (this.isFlipped) {
 						this.learnTransitioning = true;
+						this.learnFlipArmed = false;
 						this.learnSlideOutLeft = true;
 						setTimeout(() => {
 							advance();
