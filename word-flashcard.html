@@ -168,10 +168,11 @@
 				<h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Word Flashcard</h1>
 				<div v-if="user" ref="userMenuRoot" class="relative text-right">
 					<button
-						class="rounded-lg bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-white"
+						class="inline-flex max-w-[40vw] flex-col items-end rounded-lg bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-white sm:max-w-[28rem]"
 						@click="showUserMenu = !showUserMenu"
 					>
-						{{ user.email || user.uid }} • {{ syncStatus }}
+						<span class="max-w-full truncate text-right">{{ user.email || user.uid }}</span>
+						<span class="mt-0.5 text-right font-medium text-slate-500">{{ syncStatus }}</span>
 					</button>
 					<div v-if="showUserMenu" class="absolute right-0 z-10 mt-2 w-36 rounded-lg border border-slate-200 bg-white p-1 text-left shadow-lg">
 						<button
@@ -863,32 +864,8 @@
 				wordKey(word) {
 					return `${word.group}::${word.word}::${word.pronounce}`;
 				},
-				wrongWordWeight(word) {
-					const record = this.wrongWords[this.wordKey(word)];
-					if (!record) return 1;
-					const failBoost = Math.min(8, (record.failCount || 0) * 2);
-					const recoveryBoost = Math.max(0, 3 - (record.correctCount || 0));
-					return 1 + failBoost + recoveryBoost;
-				},
-				pickWeightedWords(words, count) {
-					const pool = [...words];
-					const selected = [];
-					while (pool.length > 0 && selected.length < count) {
-						let total = 0;
-						for (const w of pool) total += this.wrongWordWeight(w);
-						let roll = Math.random() * total;
-						let chosenIdx = 0;
-						for (let i = 0; i < pool.length; i += 1) {
-							roll -= this.wrongWordWeight(pool[i]);
-							if (roll <= 0) {
-								chosenIdx = i;
-								break;
-							}
-						}
-						selected.push(pool[chosenIdx]);
-						pool.splice(chosenIdx, 1);
-					}
-					return selected;
+				pickRandomWords(words, count) {
+					return shuffle(words).slice(0, count);
 				},
 				markWrongWord(word) {
 					const key = this.wordKey(word);
@@ -1116,7 +1093,7 @@
 					this.quizPassed = [];
 					this.quizOptions = [];
 					this.quizFeedback = null;
-					const picked = this.pickWeightedWords(learnedWords, 20);
+					const picked = this.pickRandomWords(learnedWords, 20);
 					this.startQuiz(picked, "Mixed 20");
 				},
 				beginStudy(groupId, mode) {
